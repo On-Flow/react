@@ -1,0 +1,420 @@
+/* OnFlow React SDK Default Styles */
+
+/* Reset and base styles */
+.onflow-questionnaire * {
+  box-sizing: border-box;
+}
+
+.onflow-questionnaire {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", sans-serif;
+  line-height: 1.5;
+  color: #333;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Loading and error states */
+.onflow-questionnaire-loading,
+.onflow-questionnaire-error {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.onflow-loading {
+  color: #666;
+  font-size: 16px;
+}
+
+.onflow-error {
+  color: #d32f2f;
+  font-size: 16px;
+  background: #ffebee;
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid #ffcdd2;
+}
+
+/* Form layout */
+.onflow-questionnaire-form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Section titles */
+.onflow-section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: #1976d2;
+  border-bottom: 2px solid #e3f2fd;
+  padding-bottom: 8px;
+}
+
+/* Resident section */
+.onflow-resident-section,
+.onflow-field-group {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.onflow-resident-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+/* Field groups */
+
+.onflow-group-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+/* Multiple rows */
+.onflow-multiple-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.onflow-multiple-row {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.onflow-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.onflow-row-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #495057;
+}
+
+.onflow-row-remove {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.onflow-row-remove:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.onflow-row-remove:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.onflow-row-add {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.onflow-row-add:hover:not(:disabled) {
+  background: #218838;
+}
+
+.onflow-row-add:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Single row */
+.onflow-single-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onflow-row-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+/* Individual fields */
+.onflow-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.onflow-field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.onflow-field-required {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+/* Input styles */
+.onflow-field-input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  background: #fff;
+}
+
+.onflow-field-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.onflow-field-input:disabled {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.onflow-field-input-error {
+  border-color: #d32f2f;
+}
+
+.onflow-field-input-error:focus {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+}
+
+/* Textarea */
+.onflow-field-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Select */
+.onflow-field-select {
+  cursor: pointer;
+}
+
+/* Checkbox styles */
+.onflow-field-yesno {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.onflow-field-checkbox {
+  margin: 0;
+  cursor: pointer;
+}
+
+.onflow-field-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+/* Checkboxes field */
+.onflow-field-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.onflow-field-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* File field */
+.onflow-field-file {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onflow-field-file-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.onflow-field-file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #e8f5e8;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+}
+
+.onflow-field-file-name {
+  font-size: 14px;
+  color: #2e7d32;
+}
+
+.onflow-field-file-remove {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.onflow-field-file-remove:hover:not(:disabled) {
+  background: #b71c1c;
+}
+
+.onflow-field-file-uploading {
+  color: #1976d2;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Geo location field */
+.onflow-field-geo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onflow-field-geo-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.onflow-field-geo-note {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Error messages */
+.onflow-field-error {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.onflow-form-error {
+  background: #ffebee;
+  color: #d32f2f;
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid #ffcdd2;
+  font-size: 14px;
+}
+
+/* Submit section */
+.onflow-submit-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.onflow-submit-button {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 150px;
+}
+
+.onflow-submit-button:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.onflow-submit-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .onflow-questionnaire {
+    padding: 16px;
+  }
+
+  .onflow-resident-fields,
+  .onflow-row-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .onflow-field-geo-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .onflow-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .onflow-section-title {
+    font-size: 20px;
+  }
+
+  .onflow-group-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .onflow-questionnaire {
+    padding: 12px;
+  }
+
+  .onflow-field-group,
+  .onflow-resident-section {
+    padding: 16px;
+  }
+
+  .onflow-submit-button {
+    width: 100%;
+  }
+}
