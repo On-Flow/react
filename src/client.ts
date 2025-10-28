@@ -12,26 +12,8 @@ export class OnFlowClient {
     this.http = http;
   }
 
-  // Questionnaires
-  async getQuestionnaireById(moduleVersionId: string): Promise<Questionnaire> {
-    return this.http.get(
-      `/public/v1/module-versions/${moduleVersionId}/questionnaire`,
-    );
-  }
-
   async getQuestionnaireByKey(moduleKey: string): Promise<Questionnaire> {
     return this.http.get(`/v1/modules/${moduleKey}/questionnaire`);
-  }
-
-  // Entities
-  async createEntity(
-    entityTypeKey: string,
-    input: EntityWrite,
-  ): Promise<{ id: string }> {
-    return this.http.post(`/v1/entities`, {
-      ...input,
-      entityTypeKey,
-    });
   }
 
   async getEntityTypeFields(entityTypeKey: string): Promise<{

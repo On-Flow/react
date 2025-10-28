@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useOnFlow } from "../context";
 import { useQuestionnaireForm } from "../hooks/useQuestionnaireForm";
 import {
@@ -7,7 +7,7 @@ import {
   flattenFormValues,
 } from "../utils/conditions";
 import { convertFormDataToSubmission } from "../helpers";
-import { Questionnaire, WithFieldAnswers } from "../types";
+import { Questionnaire } from "../types";
 import {
   TextField,
   LongTextField,
@@ -19,7 +19,6 @@ import {
   FileField,
   GeoLocationField,
 } from "./fields";
-import { Entity } from "./Entity";
 
 export type QuestionnaireProps = {
   moduleKey: string;
@@ -48,37 +47,70 @@ export function Questionnaire({
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(
     null,
   );
+  const [entityTypeFields, setEntityTypeFields] =
+    useState<Questionnaire | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [entityData, setEntityData] = useState<WithFieldAnswers<{}> | null>(
-    null,
-  );
   const [successData, setSuccessData] = useState<{
     entityId: string;
     submissionId: string;
   } | null>(null);
 
-  const form = useQuestionnaireForm(questionnaire || { fieldGroups: [] });
+  // Combine entity type fields and questionnaire fields
+  const combinedFieldGroups = useMemo(() => {
+    const groups: Questionnaire["fieldGroups"] = [];
+    if (entityTypeFields) {
+      groups.push(...entityTypeFields.fieldGroups);
+    }
+    if (questionnaire) {
+      groups.push(...questionnaire.fieldGroups);
+    }
+    return groups;
+  }, [entityTypeFields, questionnaire]);
 
-  // Fetch questionnaire structure
+  const combinedQuestionnaire: Questionnaire = useMemo(
+    () => ({ fieldGroups: combinedFieldGroups }),
+    [combinedFieldGroups],
+  );
+
+  const form = useQuestionnaireForm(combinedQuestionnaire);
+
+  // Fetch questionnaire structure and entity type fields
   useEffect(() => {
-    const fetchQuestionnaire = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        let data: Questionnaire;
+        const promises: Promise<Questionnaire>[] = [];
+
+        // Fetch questionnaire
         if (moduleKey) {
-          data = await client.getQuestionnaireByKey(moduleKey);
+          promises.push(client.getQuestionnaireByKey(moduleKey));
         } else {
           throw new Error("moduleKey must be provided");
         }
 
-        setQuestionnaire(data);
+        // Fetch entity type fields if provided
+        if (entityTypeKey) {
+          promises.push(
+            client.getEntityTypeFields(entityTypeKey) as Promise<Questionnaire>,
+          );
+        }
+
+        const results = await Promise.all(promises);
+
+        if (moduleKey) {
+          setQuestionnaire(results[0]);
+        }
+
+        if (entityTypeKey) {
+          setEntityTypeFields(results[moduleKey ? 1 : 0] as Questionnaire);
+        }
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to load questionnaire";
+          err instanceof Error ? err.message : "Failed to load data";
         setError(errorMessage);
         onError?.(new Error(errorMessage));
       } finally {
@@ -87,9 +119,9 @@ export function Questionnaire({
     };
 
     if (moduleKey) {
-      fetchQuestionnaire();
+      fetchData();
     }
-  }, [moduleKey, client, onError]);
+  }, [moduleKey, entityTypeKey, client, onError]);
 
   // Render field based on type
   const renderField = useCallback(
@@ -140,7 +172,7 @@ export function Questionnaire({
 
       if (!questionnaire || !moduleKey) return;
 
-      // Validate questionnaire fields
+      // Validate all fields
       if (!form.validateAll()) {
         setError("Please fix the errors below");
         return;
@@ -150,9 +182,28 @@ export function Questionnaire({
       setError(null);
 
       try {
-        // Convert form data to submission format
+        // Extract entity field groups IDs
+        const entityGroupIds =
+          entityTypeFields?.fieldGroups.map((g) => g.id) || [];
+
+        // Separate entity fields from questionnaire fields
+        const entityValues: typeof form.values = {};
+        const questionnaireValues: typeof form.values = {};
+
+        Object.entries(form.values).forEach(([groupId, groupData]) => {
+          if (entityGroupIds.includes(groupId)) {
+            entityValues[groupId] = groupData;
+          } else {
+            questionnaireValues[groupId] = groupData;
+          }
+        });
+
+        // Convert to submission format
+        const entityData = entityTypeFields
+          ? convertFormDataToSubmission(entityValues, entityTypeFields)
+          : undefined;
         const submissionData = convertFormDataToSubmission(
-          form.values,
+          questionnaireValues,
           questionnaire,
         );
 
@@ -189,7 +240,16 @@ export function Questionnaire({
         setSubmitting(false);
       }
     },
-    [questionnaire, form, client, moduleKey, entityTypeKey, onSuccess, onError],
+    [
+      questionnaire,
+      entityTypeFields,
+      form,
+      client,
+      moduleKey,
+      entityTypeKey,
+      onSuccess,
+      onError,
+    ],
   );
 
   if (loading) {
@@ -230,13 +290,10 @@ export function Questionnaire({
 
   return (
     <form onSubmit={handleSubmit} className="onflow-questionnaire-form">
-      {entityTypeKey && (
-        <Entity entityTypeKey={entityTypeKey} onChange={setEntityData} />
-      )}
       <div className={`onflow-questionnaire ${className}`}>
-        {/* Questionnaire Fields */}
+        {/* All Fields (Entity + Questionnaire) */}
         <div className="onflow-questionnaire-fields">
-          {questionnaire.fieldGroups.map((group) => {
+          {combinedFieldGroups.map((group) => {
             const shouldShow = shouldShowGroup(
               group.condition,
               flattenedValues,

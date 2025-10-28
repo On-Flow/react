@@ -1,12 +1,15 @@
 /* OnFlow React SDK Default Styles */
 
+.onflow-questionnaire-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
 /* Reset and base styles */
-.onflow-entity *,
 .onflow-questionnaire * {
   box-sizing: border-box;
 }
 
-.onflow-entity,
 .onflow-questionnaire {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
@@ -40,7 +43,6 @@
 }
 
 /* Form layout */
-.onflow-entity-form,
 .onflow-questionnaire-form {
   display: flex;
   flex-direction: column;
@@ -372,7 +374,6 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-.onflow-entity,
   .onflow-questionnaire {
     padding: 16px;
   }
@@ -401,7 +402,6 @@
 }
 
 @media (max-width: 480px) {
-.onflow-entity,
   .onflow-questionnaire {
     padding: 12px;
   }
