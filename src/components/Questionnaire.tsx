@@ -7,7 +7,7 @@ import {
   flattenFormValues,
 } from "../utils/conditions";
 import { convertFormDataToSubmission } from "../helpers";
-import type { Questionnaire, ResidentWrite } from "../types";
+import { Questionnaire, WithFieldAnswers } from "../types";
 import {
   TextField,
   LongTextField,
@@ -19,41 +19,45 @@ import {
   FileField,
   GeoLocationField,
 } from "./fields";
+import { Entity } from "./Entity";
 
 export type QuestionnaireProps = {
-  moduleVersionId: string;
-  onSuccess?: (data: { residentId: string; submissionId: string }) => void;
+  moduleKey: string;
+  entityTypeKey?: string;
+  onSuccess?: (data: { entityId: string; submissionId: string }) => void;
   onError?: (error: Error) => void;
   className?: string;
   disabled?: boolean;
-  // When false, hides address inputs (address lines, city, post code)
-  showResidentAddressFields?: boolean;
   // If provided, renders this component after successful submit
-  renderSuccess?: (
-    data: { residentId: string; submissionId: string }
-  ) => React.ReactNode;
+  renderSuccess?: (data: {
+    entityId: string;
+    submissionId: string;
+  }) => React.ReactNode;
 };
 
 export function Questionnaire({
-  moduleVersionId,
+  moduleKey,
+  entityTypeKey,
   onSuccess,
   onError,
   className = "",
   disabled = false,
-  showResidentAddressFields = true,
   renderSuccess,
 }: QuestionnaireProps) {
   const { client } = useOnFlow();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(
-    null
+    null,
   );
-  const [residentData, setResidentData] = useState<Partial<ResidentWrite>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successData, setSuccessData] = useState<
-    { residentId: string; submissionId: string } | null
-  >(null);
+  const [entityData, setEntityData] = useState<WithFieldAnswers<{}> | null>(
+    null,
+  );
+  const [successData, setSuccessData] = useState<{
+    entityId: string;
+    submissionId: string;
+  } | null>(null);
 
   const form = useQuestionnaireForm(questionnaire || { fieldGroups: [] });
 
@@ -63,7 +67,14 @@ export function Questionnaire({
       try {
         setLoading(true);
         setError(null);
-        const data = await client.getQuestionnaireById(moduleVersionId);
+
+        let data: Questionnaire;
+        if (moduleKey) {
+          data = await client.getQuestionnaireByKey(moduleKey);
+        } else {
+          throw new Error("moduleKey must be provided");
+        }
+
         setQuestionnaire(data);
       } catch (err) {
         const errorMessage =
@@ -75,15 +86,17 @@ export function Questionnaire({
       }
     };
 
-    fetchQuestionnaire();
-  }, [moduleVersionId, client, onError]);
+    if (moduleKey) {
+      fetchQuestionnaire();
+    }
+  }, [moduleKey, client, onError]);
 
   // Render field based on type
   const renderField = useCallback(
     (field: any, groupId: string, rowIndex: number, fieldError?: string) => {
       const value = form.getValue(groupId, rowIndex, field.id);
       const isTouched = form.isFieldTouched(groupId, rowIndex, field.id);
-      const showError = isTouched && fieldError || undefined;
+      const showError = (isTouched && fieldError) || undefined;
 
       const fieldProps = {
         field,
@@ -117,7 +130,7 @@ export function Questionnaire({
           return <TextField {...fieldProps} />;
       }
     },
-    [form, disabled, submitting]
+    [form, disabled, submitting],
   );
 
   // Handle form submission
@@ -125,20 +138,7 @@ export function Questionnaire({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!questionnaire) return;
-
-      // Validate resident data
-      const residentErrors: string[] = [];
-      if (!residentData.firstName?.trim())
-        residentErrors.push("First name is required");
-      if (!residentData.lastName?.trim())
-        residentErrors.push("Last name is required");
-      if (!residentData.email?.trim()) residentErrors.push("Email is required");
-
-      if (residentErrors.length > 0) {
-        setError(residentErrors.join(", "));
-        return;
-      }
+      if (!questionnaire || !moduleKey) return;
 
       // Validate questionnaire fields
       if (!form.validateAll()) {
@@ -150,34 +150,33 @@ export function Questionnaire({
       setError(null);
 
       try {
-        // Step 1: Create resident
-        const residentResponse = await client.createResident({
-          firstName: residentData.firstName!,
-          lastName: residentData.lastName!,
-          email: residentData.email!,
-          phone: residentData.phone,
-          addressLine1: residentData.addressLine1,
-          addressLine2: residentData.addressLine2,
-          city: residentData.city,
-          postCode: residentData.postCode,
-        });
-
-        // Step 2: Create submission
+        // Convert form data to submission format
         const submissionData = convertFormDataToSubmission(
           form.values,
-          questionnaire
-        );
-        const submissionResponse = await client.submitQuestionnaire(
-          moduleVersionId,
-          {
-            residentId: residentResponse.id,
-            fieldAnswers: submissionData.fieldAnswers,
-          }
+          questionnaire,
         );
 
+        let response: { id: string; entityId?: string };
+
+        if (moduleKey) {
+          // Use new entity-based submission
+          response = await client.submitQuestionnaireByKey(moduleKey, {
+            entity:
+              entityTypeKey && entityData
+                ? {
+                    entityTypeKey,
+                    fieldAnswers: entityData.fieldAnswers,
+                  }
+                : undefined,
+            fieldAnswers: submissionData.fieldAnswers,
+          });
+        } else {
+          throw new Error("moduleKey must be provided");
+        }
+
         const success = {
-          residentId: residentResponse.id,
-          submissionId: submissionResponse.id,
+          entityId: response.entityId || "",
+          submissionId: response.id,
         };
         setSuccessData(success);
         onSuccess?.(success);
@@ -190,23 +189,7 @@ export function Questionnaire({
         setSubmitting(false);
       }
     },
-    [
-      questionnaire,
-      residentData,
-      form,
-      client,
-      moduleVersionId,
-      onSuccess,
-      onError,
-    ]
-  );
-
-  // Update resident data
-  const updateResidentData = useCallback(
-    (key: keyof ResidentWrite, value: string) => {
-      setResidentData((prev) => ({ ...prev, [key]: value }));
-    },
-    []
+    [questionnaire, form, client, moduleKey, entityTypeKey, onSuccess, onError],
   );
 
   if (loading) {
@@ -246,129 +229,17 @@ export function Questionnaire({
   }
 
   return (
-    <div className={`onflow-questionnaire ${className}`}>
-      <form onSubmit={handleSubmit} className="onflow-questionnaire-form">
-        {/* Resident Information Section */}
-        <div className="onflow-resident-section">
-          <h2 className="onflow-section-title">Your Information</h2>
-          <div className="onflow-resident-fields">
-            <div className="onflow-field">
-              <label className="onflow-field-label">
-                First Name <span className="onflow-field-required">*</span>
-              </label>
-              <input
-                type="text"
-                className="onflow-field-input"
-                value={residentData.firstName || ""}
-                onChange={(e) =>
-                  updateResidentData("firstName", e.target.value)
-                }
-                disabled={disabled || submitting}
-                required
-              />
-            </div>
-
-            <div className="onflow-field">
-              <label className="onflow-field-label">
-                Last Name <span className="onflow-field-required">*</span>
-              </label>
-              <input
-                type="text"
-                className="onflow-field-input"
-                value={residentData.lastName || ""}
-                onChange={(e) => updateResidentData("lastName", e.target.value)}
-                disabled={disabled || submitting}
-                required
-              />
-            </div>
-
-            <div className="onflow-field">
-              <label className="onflow-field-label">
-                Email <span className="onflow-field-required">*</span>
-              </label>
-              <input
-                type="email"
-                className="onflow-field-input"
-                value={residentData.email || ""}
-                onChange={(e) => updateResidentData("email", e.target.value)}
-                disabled={disabled || submitting}
-                required
-              />
-            </div>
-
-            <div className="onflow-field">
-              <label className="onflow-field-label">Phone</label>
-              <input
-                type="tel"
-                className="onflow-field-input"
-                value={residentData.phone || ""}
-                onChange={(e) => updateResidentData("phone", e.target.value)}
-                disabled={disabled || submitting}
-              />
-            </div>
-
-            {showResidentAddressFields && (
-              <>
-                <div className="onflow-field">
-                  <label className="onflow-field-label">Address Line 1</label>
-                  <input
-                    type="text"
-                    className="onflow-field-input"
-                    value={residentData.addressLine1 || ""}
-                    onChange={(e) =>
-                      updateResidentData("addressLine1", e.target.value)
-                    }
-                    disabled={disabled || submitting}
-                  />
-                </div>
-
-                <div className="onflow-field">
-                  <label className="onflow-field-label">Address Line 2</label>
-                  <input
-                    type="text"
-                    className="onflow-field-input"
-                    value={residentData.addressLine2 || ""}
-                    onChange={(e) =>
-                      updateResidentData("addressLine2", e.target.value)
-                    }
-                    disabled={disabled || submitting}
-                  />
-                </div>
-
-                <div className="onflow-field">
-                  <label className="onflow-field-label">City</label>
-                  <input
-                    type="text"
-                    className="onflow-field-input"
-                    value={residentData.city || ""}
-                    onChange={(e) => updateResidentData("city", e.target.value)}
-                    disabled={disabled || submitting}
-                  />
-                </div>
-
-                <div className="onflow-field">
-                  <label className="onflow-field-label">Post Code</label>
-                  <input
-                    type="text"
-                    className="onflow-field-input"
-                    value={residentData.postCode || ""}
-                    onChange={(e) =>
-                      updateResidentData("postCode", e.target.value)
-                    }
-                    disabled={disabled || submitting}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
+    <form onSubmit={handleSubmit} className="onflow-questionnaire-form">
+      {entityTypeKey && (
+        <Entity entityTypeKey={entityTypeKey} onChange={setEntityData} />
+      )}
+      <div className={`onflow-questionnaire ${className}`}>
         {/* Questionnaire Fields */}
         <div className="onflow-questionnaire-fields">
           {questionnaire.fieldGroups.map((group) => {
             const shouldShow = shouldShowGroup(
               group.condition,
-              flattenedValues
+              flattenedValues,
             );
             if (!shouldShow) return null;
 
@@ -404,14 +275,14 @@ export function Questionnaire({
                               {group.fields.map((field) => {
                                 const shouldShow = shouldShowField(
                                   field.condition,
-                                  flattenedValues
+                                  flattenedValues,
                                 );
                                 if (!shouldShow) return null;
 
                                 const fieldError = form.getFieldError(
                                   group.id,
                                   rowIndex,
-                                  field.id
+                                  field.id,
                                 );
                                 return (
                                   <div key={field.id}>
@@ -419,7 +290,7 @@ export function Questionnaire({
                                       field,
                                       group.id,
                                       rowIndex,
-                                      fieldError
+                                      fieldError,
                                     )}
                                   </div>
                                 );
@@ -427,7 +298,7 @@ export function Questionnaire({
                             </div>
                           </div>
                         );
-                      }
+                      },
                     )}
 
                     <button
@@ -445,14 +316,14 @@ export function Questionnaire({
                     {group.fields.map((field) => {
                       const shouldShow = shouldShowField(
                         field.condition,
-                        flattenedValues
+                        flattenedValues,
                       );
                       if (!shouldShow) return null;
 
                       const fieldError = form.getFieldError(
                         group.id,
                         0,
-                        field.id
+                        field.id,
                       );
                       return (
                         <div key={field.id}>
@@ -484,7 +355,7 @@ export function Questionnaire({
             {submitting ? "Submitting..." : "Submit"}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

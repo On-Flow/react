@@ -1,8 +1,13 @@
-import type { CreateSubmission, Questionnaire, ResidentWrite } from "./types";
+import type {
+  CreateSubmission,
+  Questionnaire,
+  EntityWrite,
+  EntityDetails,
+} from "./types";
 import { HttpClient } from "./http";
 
 export class OnFlowClient {
-  private readonly http: HttpClient;
+  public readonly http: HttpClient;
   constructor(http: HttpClient) {
     this.http = http;
   }
@@ -10,13 +15,47 @@ export class OnFlowClient {
   // Questionnaires
   async getQuestionnaireById(moduleVersionId: string): Promise<Questionnaire> {
     return this.http.get(
-      `/public/v1/module-versions/${moduleVersionId}/questionnaire`
+      `/public/v1/module-versions/${moduleVersionId}/questionnaire`,
     );
   }
 
-  // Residents
-  async createResident(input: ResidentWrite): Promise<{ id: string }> {
-    return this.http.post(`/public/v1/residents`, input);
+  async getQuestionnaireByKey(moduleKey: string): Promise<Questionnaire> {
+    return this.http.get(`/v1/modules/${moduleKey}/questionnaire`);
+  }
+
+  // Entities
+  async createEntity(
+    entityTypeKey: string,
+    input: EntityWrite,
+  ): Promise<{ id: string }> {
+    return this.http.post(`/v1/entities`, {
+      ...input,
+      entityTypeKey,
+    });
+  }
+
+  async getEntityTypeFields(entityTypeKey: string): Promise<{
+    id: string;
+    key: string;
+    label: string;
+    fieldGroups: Array<{
+      id: string;
+      title: string;
+      isMultiple: boolean;
+      sortOrder: number;
+      condition?: any;
+      fields: Array<{
+        id: string;
+        label: string;
+        type: string;
+        isRequired: boolean;
+        config: any;
+        sortOrder: number;
+        condition?: any;
+      }>;
+    }>;
+  }> {
+    return this.http.get(`/v1/entity-types/key/${entityTypeKey}`);
   }
 
   // Files
@@ -36,16 +75,15 @@ export class OnFlowClient {
 
   async updateFileStatus(
     fileId: string,
-    status: "pending" | "uploaded" | "failed"
+    status: "pending" | "uploaded" | "failed",
   ): Promise<{ id: string; status: string }> {
     return this.http.put(`/public/v1/files/${fileId}/status`, { status });
   }
 
-  // Submissions
-  async submitQuestionnaire(
-    moduleVersionId: string,
-    input: CreateSubmission
-  ): Promise<{ id: string }> {
-    return this.http.post(`/public/v1/submissions/${moduleVersionId}`, input);
+  async submitQuestionnaireByKey(
+    moduleKey: string,
+    input: CreateSubmission,
+  ): Promise<{ id: string; entityId?: string }> {
+    return this.http.post(`/v1/modules/key/${moduleKey}/submissions`, input);
   }
 }

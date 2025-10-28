@@ -2,6 +2,7 @@ import type {
   Questionnaire,
   CreateSubmission,
   SubmissionFieldAnswer,
+  WithFieldAnswers,
 } from "./types";
 
 export type DynamicFormData = Record<
@@ -11,8 +12,8 @@ export type DynamicFormData = Record<
 
 export function convertFormDataToSubmission(
   data: DynamicFormData,
-  questionnaire: Questionnaire
-): Pick<CreateSubmission, "fieldAnswers"> {
+  questionnaire: Questionnaire,
+): WithFieldAnswers<any> {
   const fieldAnswers: CreateSubmission["fieldAnswers"] = [];
 
   questionnaire.fieldGroups.forEach((group) => {
@@ -30,7 +31,7 @@ export function convertFormDataToSubmission(
         if (value === undefined || value === null || value === "") return;
 
         const answer: SubmissionFieldAnswer = {
-          moduleFieldId: fieldId,
+          fieldId: fieldId,
           rowIndex,
         };
         switch (field.type) {

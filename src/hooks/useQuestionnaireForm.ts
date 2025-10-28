@@ -217,18 +217,6 @@ export function useQuestionnaireForm(
         }
       }
 
-      if (
-        field.type === "email" &&
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(String(value))) {
-          return `${field.label} must be a valid email address`;
-        }
-      }
-
       return undefined;
     },
     []

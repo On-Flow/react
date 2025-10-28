@@ -85,19 +85,22 @@ export type Questionnaire = {
   fieldGroups: FieldGroup[];
 };
 
-export type ResidentWrite = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  postCode?: string;
+export type EntityWrite = {
+  name: string;
+  fieldAnswers?: Array<{
+    fieldId: string;
+    rowIndex?: number;
+    textValue?: string;
+    numberValue?: number;
+    boolValue?: boolean;
+    listValue?: unknown[];
+    objectValue?: Record<string, unknown>;
+    fileValue?: string;
+  }>;
 };
 
 export type SubmissionFieldAnswer = {
-  moduleFieldId: string;
+  fieldId: string;
   rowIndex: number;
   numberValue?: number;
   boolValue?: boolean;
@@ -107,9 +110,33 @@ export type SubmissionFieldAnswer = {
   fileValue?: string; // uuid
 };
 
+export type WithFieldAnswers<T> = T & {
+  fieldAnswers?: Array<{
+    fieldId: string;
+    rowIndex?: number;
+    textValue?: string;
+    numberValue?: number;
+    boolValue?: boolean;
+    listValue?: unknown[];
+    objectValue?: Record<string, unknown>;
+    fileValue?: string;
+  }>;
+};
+
 export type CreateSubmission = {
-  residentId: string; // uuid
+  entity?: WithFieldAnswers<{
+    entityTypeKey: string;
+  }>;
   fieldAnswers: SubmissionFieldAnswer[];
+};
+
+// Form state types
+export type EntityDetails = {
+  [groupId: string]: {
+    [rowIndex: number]: {
+      [fieldId: string]: unknown;
+    };
+  };
 };
 
 // Form state types

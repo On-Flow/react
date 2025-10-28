@@ -340,7 +340,7 @@ export function FileField({
     const file = files[0];
 
     // Validate file
-    const validationError = validateFile(file, field);
+    const validationError = validateFile(file, field.config);
     if (validationError) {
       setUploadError(validationError);
       return;
